@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vasha Cab ⚡ — Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green: #1DB954; --green-dark: #0D3B2E; --green-mid: #145A38;
+      --green-light: #D4F5E2; --accent: #00E676; --red: #FF3B30;
+      --yellow: #FFD600; --white: #fff; --off: #F7FAF8;
+      --gray-l: #E8EEE9; --gray-m: #9EAAA0; --gray-d: #4A5550; --black: #0A0F0D;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--green-dark); min-height: 100vh; }
+    /* ── PHONE SHELL ── */
+    .shell-wrap { display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:40px 16px 40px; }
+    .phone { width:390px; min-height:844px; background:var(--off); border-radius:44px;
+      box-shadow:0 40px 100px rgba(0,0,0,0.6), inset 0 0 0 2px #222; position:relative; overflow:hidden; }
+    .notch { width:120px; height:30px; background:#111; border-radius:0 0 20px 20px;
+      position:absolute; top:0; left:50%; transform:translateX(-50%); z-index:100; }
+    .screen { display:none; flex-direction:column; min-height:844px; padding-bottom:90px; }
+    .screen.active { display:flex; }
+    /* ── ANIMATIONS ── */
+    @keyframes scaleIn { from{opacity:0;transform:scale(0.4)} to{opacity:1;transform:scale(1)} }
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes dotPulse{ 0%,100%{transform:scale(0.6);opacity:0.5} 50%{transform:scale(1);opacity:1} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin    { to{transform:rotate(360deg)} }
+    @keyframes moveDriver { from{left:20%} to{left:58%} }
+    @keyframes progressFill { from{width:0%} to{width:100%} }
+    /* ── HEADER ── */
+    .header { background:linear-gradient(135deg,var(--green-dark),var(--green-mid));
+      padding:52px 20px 24px; color:#fff; position:relative; overflow:hidden; }
+    .header::before { content:''; position:absolute; top:-60px; right:-60px; width:220px;
+      height:220px; border-radius:50%; background:rgba(29,185,84,0.12); pointer-events:none; }
+    /* ── CARD ── */
+    .card { background:#fff; border-radius:20px; padding:16px;
+      box-shadow:0 3px 12px rgba(0,0,0,0.08); }
+    /* ── BUTTON ── */
+    .btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+      padding:14px 20px; border-radius:16px; border:none; cursor:pointer;
+      font-family:'Inter',sans-serif; font-size:15px; font-weight:700; transition:transform .15s; }
+    .btn:active { transform:scale(0.98); }
+    .btn-primary { background:linear-gradient(135deg,var(--green),#17a349); color:#fff;
+      box-shadow:0 4px 14px rgba(29,185,84,0.35); }
+    .btn-outline { background:transparent; border:2px solid var(--green); color:var(--green); }
+    /* ── INPUT ── */
+    .input-box { display:flex; align-items:center; gap:8px; background:var(--off);
+      border:1.5px solid var(--gray-l); border-radius:14px; padding:0 12px;
+      min-height:52px; transition:border-color .2s; margin-bottom:8px; }
+    .input-box:focus-within { border-color:var(--green); background:#fff; }
+    .input-box input { flex:1; border:none; background:transparent; font-size:14px;
+      color:var(--black); font-family:'Inter',sans-serif; outline:none; padding:12px 0; }
+    .input-box input::placeholder { color:var(--gray-m); }
+    /* ── BOTTOM NAV ── */
+    .bottom-nav { position:absolute; bottom:12px; left:12px; right:12px; background:#fff;
+      border-radius:24px; display:flex; box-shadow:0 6px 24px rgba(0,0,0,0.15); height:64px; padding:0 8px; z-index:50; }
+    .nav-tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:3px; cursor:pointer; border-radius:16px; border:none; background:transparent;
+      font-family:'Inter',sans-serif; transition:background .2s; padding:6px; }
+    .nav-tab.active { background:var(--green-light); }
+    .nav-tab .tab-icon { font-size:20px; opacity:.45; }
+    .nav-tab.active .tab-icon { opacity:1; }
+    .nav-tab .tab-lbl { font-size:10px; font-weight:600; color:var(--gray-m); }
+    .nav-tab.active .tab-lbl { color:var(--green); }
+    /* ── BADGE ── */
+    .badge { display:inline-flex; align-items:center; border-radius:999px;
+      padding:3px 10px; font-size:11px; font-weight:700; }
+    /* ── SCROLLABLE CONTENT ── */
+    .scroll-content { flex:1; overflow-y:auto; padding:16px; padding-bottom:80px; }
+    .scroll-content::-webkit-scrollbar { width:3px; }
+    .scroll-content::-webkit-scrollbar-thumb { background:var(--green); border-radius:2px; }
+  </style>
+</head>
+<body>
+<div class="shell-wrap">
+  <!-- LANDING PAGE (outside phone) -->
+  <div id="landing" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; width:100%; padding:40px 20px; text-align:center;">
+  </div>
+
+  <!-- PHONE SHELL -->
+  <div class="phone" id="phoneShell">
+    <div class="notch"></div>
+
+    <!-- ══ SCREEN 1: SPLASH ══ -->
+    <div id="s-splash" class="screen active" style="background:linear-gradient(160deg,#0D3B2E,#145A38,#1a6b44);align-items:center;justify-content:center;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-80px;right:-80px;width:280px;height:280px;border-radius:50%;background:rgba(29,185,84,0.12);"></div>
+      <div style="position:absolute;bottom:-80px;left:-50px;width:220px;height:220px;border-radius:50%;background:rgba(0,230,118,0.08);"></div>
+      <div id="splashLogo" style="position:relative;margin-bottom:28px;opacity:0;">
+        <div style="width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:58px;">⚡</div>
+        <div style="position:absolute;bottom:-4px;right:-4px;width:36px;height:36px;border-radius:50%;background:#00E676;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #0D3B2E;">🌿</div>
+      </div>
+      <h1 id="splashTitle" style="font-size:42px;font-weight:900;color:#fff;letter-spacing:2px;margin-bottom:6px;opacity:0;">Vasha Cab</h1>
+      <p id="splashTag" style="font-size:14px;color:rgba(255,255,255,0.72);letter-spacing:0.5px;margin-bottom:48px;opacity:0;">Zero Emissions · Pure Luxury ⚡</p>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div class="dot" style="width:10px;height:10px;border-radius:50%;background:#00E676;animation:dotPulse .7s ease infinite;animation-delay:0s;"></div>
+        <div class="dot" style="width:10px;height:10px;border-radius:50%;background:#00E676;animation:dotPulse .7s ease infinite;animation-delay:.15s;"></div>
+        <div class="dot" style="width:10px;height:10px;border-radius:50%;background:#00E676;animation:dotPulse .7s ease infinite;animation-delay:.3s;"></div>
+      </div>
+      <p style="position:absolute;bottom:32px;font-size:12px;color:rgba(255,255,255,0.4);">🌍 Every ride saves the planet</p>
+    </div>
+
+    <!-- ══ SCREEN 2: AUTH ══ -->
+    <div id="s-auth" class="screen" style="flex-direction:column;">
+      <div class="header" style="padding-bottom:32px;text-align:center;">
+        <div style="font-size:34px;margin-bottom:8px;">⚡</div>
+        <h2 style="font-size:26px;font-weight:900;letter-spacing:1px;">Vasha Cab</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,0.65);margin-top:4px;">Electric rides, sustainable future</p>
+      </div>
+      <div style="flex:1;background:#fff;border-radius:28px 28px 0 0;margin-top:-20px;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="display:flex;background:var(--off);border-bottom:1px solid var(--gray-l);">
+          <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')" style="flex:1;padding:14px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--green);border-bottom:3px solid var(--green);cursor:pointer;">Login</button>
+          <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register')" style="flex:1;padding:14px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--gray-m);border-bottom:3px solid transparent;cursor:pointer;">Register</button>
+          <button class="auth-tab" data-tab="forgot" onclick="switchAuthTab('forgot')" style="flex:1;padding:14px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--gray-m);border-bottom:3px solid transparent;cursor:pointer;">Forgot</button>
+        </div>
+        <div id="auth-login" class="scroll-content auth-panel" style="display:flex;flex-direction:column;">
+          <h3 style="font-size:22px;font-weight:800;margin-bottom:4px;">Welcome back 👋</h3>
+          <p style="font-size:13px;color:var(--gray-m);margin-bottom:20px;">Sign in to your Vasha Cab account</p>
+          <div class="input-box"><span style="font-size:18px;">📧</span><input type="email" placeholder="your@email.com" /></div>
+          <div class="input-box"><span style="font-size:18px;">🔒</span><input type="password" placeholder="Enter your password" /></div>
+          <div style="text-align:right;margin-bottom:16px;"><button onclick="switchAuthTab('forgot')" style="background:none;border:none;color:var(--green);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">Forgot password?</button></div>
+          <button class="btn btn-primary" onclick="goScreen('main')">⚡&nbsp; Sign In</button>
+          <p style="text-align:center;font-size:13px;color:var(--gray-m);margin-top:16px;">No account? <button onclick="switchAuthTab('register')" style="background:none;border:none;color:var(--green);font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;">Create one</button></p>
+        </div>
+        <div id="auth-register" class="scroll-content auth-panel" style="display:none;flex-direction:column;">
+          <h3 style="font-size:22px;font-weight:800;margin-bottom:4px;">Join Vasha Cab 🌿</h3>
+          <p style="font-size:13px;color:var(--gray-m);margin-bottom:20px;">Create your account and ride green</p>
+          <div class="input-box"><span style="font-size:18px;">👤</span><input placeholder="Full Name" /></div>
+          <div class="input-box"><span style="font-size:18px;">📧</span><input type="email" placeholder="your@email.com" /></div>
+          <div class="input-box"><span style="font-size:18px;">📱</span><input type="tel" placeholder="+254 700 000 000" /></div>
+          <div class="input-box"><span style="font-size:18px;">🔒</span><input type="password" placeholder="Password (min 6 chars)" /></div>
+          <p style="font-size:11px;color:var(--gray-m);text-align:center;margin:8px 0 12px;">By registering you agree to our <span style="color:var(--green);">Terms</span> &amp; <span style="color:var(--green);">Privacy Policy</span>.</p>
+          <button class="btn btn-primary" onclick="goScreen('main')">🌿&nbsp; Create Account</button>
+        </div>
+        <div id="auth-forgot" class="scroll-content auth-panel" style="display:none;flex-direction:column;">
+          <h3 style="font-size:22px;font-weight:800;margin-bottom:4px;">Reset Password 🔑</h3>
+          <p style="font-size:13px;color:var(--gray-m);margin-bottom:20px;">We'll send a reset link to your email</p>
+          <div class="input-box"><span style="font-size:18px;">📧</span><input type="email" placeholder="your@email.com" /></div>
+          <button class="btn btn-primary" style="margin-top:8px;" onclick="alert('Reset link sent! Check your email.')">📨&nbsp; Send Reset Link</button>
+          <p style="text-align:center;font-size:13px;color:var(--gray-m);margin-top:16px;">Remembered it? <button onclick="switchAuthTab('login')" style="background:none;border:none;color:var(--green);font-weight:700;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;">Back to Login</button></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 3: HOME ══ -->
+    <div id="s-main" class="screen" style="flex-direction:column;position:relative;">
+      <div class="header">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div><p style="font-size:13px;color:rgba(255,255,255,0.65);">Good morning 👋</p><h2 style="font-size:22px;font-weight:800;">Doreen</h2></div>
+          <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">👤</div>
+        </div>
+        <div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:10px 14px;font-size:13px;color:rgba(255,255,255,0.85);">
+          🌿 You've saved <strong style="color:#00E676;">187.5 kg</strong> CO₂ this year · 45 rides
+        </div>
+      </div>
+      <div class="scroll-content">
+        <!-- Booking card -->
+        <div class="card" style="margin-bottom:16px;">
+          <p style="font-weight:800;font-size:15px;margin-bottom:12px;">📍 Book a Ride</p>
+          <div class="input-box" style="position:relative;">
+            <span style="font-size:18px;">🟢</span>
+            <input id="pickupInput" placeholder="Select pickup location…" onfocus="showDropdown('pickup')" oninput="filterDropdown('pickup')" autocomplete="off" />
+          </div>
+          <div id="pickup-dropdown" style="display:none;position:relative;z-index:50;background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:1px solid var(--gray-l);max-height:180px;overflow-y:auto;margin-top:-4px;margin-bottom:8px;"></div>
+          <div style="display:flex;align-items:center;height:24px;padding-left:8px;margin-bottom:-4px;">
+            <div style="width:2px;flex:1;background:var(--gray-l);margin-left:9px;"></div>
+            <button onclick="swapLocations()" style="margin-left:10px;width:30px;height:30px;border-radius:50%;background:var(--green-light);border:none;cursor:pointer;font-size:16px;color:var(--green);font-weight:700;">⇅</button>
+          </div>
+          <div class="input-box" style="position:relative;margin-top:4px;">
+            <span style="font-size:18px;">🔴</span>
+            <input id="destInput" placeholder="Select destination…" onfocus="showDropdown('dest')" oninput="filterDropdown('dest')" autocomplete="off" />
+          </div>
+          <div id="dest-dropdown" style="display:none;position:relative;z-index:50;background:#fff;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:1px solid var(--gray-l);max-height:180px;overflow-y:auto;margin-top:-4px;margin-bottom:4px;"></div>
+          <p id="locError" style="color:var(--red);font-size:12px;display:none;">⚠️ Please select both pickup and destination.</p>
+        </div>
+        <!-- Map -->
+        <div style="border-radius:20px;overflow:hidden;height:190px;margin-bottom:16px;position:relative;background:linear-gradient(135deg,#1a4a34,#0f3522);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,0.1);">
+          <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(5,1fr);opacity:0.12;"><?php for($i=0;$i<25;$i++) echo '<div style="border:0.5px solid #1DB954;"></div>'; ?></div>
+          <div id="mapGrid" style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(5,1fr);opacity:0.12;"></div>
+          <div id="mapCenter" style="z-index:1;text-align:center;"><span style="font-size:32px;">🗺️</span><p style="color:#fff;font-weight:700;margin-top:6px;font-size:14px;">Select locations above</p><p style="color:rgba(255,255,255,0.5);font-size:11px;margin-top:2px;">Pins appear when selected</p></div>
+          <div id="pinA" style="display:none;position:absolute;width:26px;height:26px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);z-index:3;"><span style="font-size:10px;color:#fff;font-weight:800;">A</span></div>
+          <div id="pinB" style="display:none;position:absolute;width:26px;height:26px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);z-index:3;"><span style="font-size:10px;color:#fff;font-weight:800;">B</span></div>
+          <svg id="routeSvg" style="position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none;display:none;"></svg>
+        </div>
+        <!-- Estimates -->
+        <div id="estimatesCard" class="card" style="display:none;margin-bottom:16px;animation:fadeUp .3s ease;">
+          <div style="display:flex;">
+            <div style="flex:1;text-align:center;"><p style="font-size:10px;color:var(--gray-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Distance</p><p id="estDist" style="font-size:15px;font-weight:800;"></p><p id="estDur" style="font-size:11px;color:var(--gray-m);margin-top:2px;"></p></div>
+            <div style="width:1px;background:var(--gray-l);align-self:stretch;"></div>
+            <div style="flex:1;text-align:center;"><p style="font-size:10px;color:var(--gray-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Est. Fare</p><p id="estFare" style="font-size:15px;font-weight:800;"></p><p id="estVeh" style="font-size:11px;color:var(--gray-m);margin-top:2px;"></p></div>
+            <div style="width:1px;background:var(--gray-l);align-self:stretch;"></div>
+            <div style="flex:1;text-align:center;"><p style="font-size:10px;color:var(--gray-m);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">CO₂ Saved</p><p id="estCo2" style="font-size:15px;font-weight:800;color:var(--green);"></p><p style="font-size:11px;color:var(--gray-m);margin-top:2px;">vs petrol 🌿</p></div>
+          </div>
+        </div>
+        <!-- Vehicle cards -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <p style="font-weight:800;font-size:15px;">🚗 Choose Your Ride</p>
+            <button id="toggleVehBtn" onclick="toggleVehicles()" style="background:none;border:none;color:var(--green);font-weight:600;font-size:13px;cursor:pointer;font-family:'Inter',sans-serif;">▼ All</button>
+          </div>
+          <div id="vehicleCards"></div>
+        </div>
+        <button class="btn btn-primary" id="bookBtn" onclick="handleBook()">⚡ Book Eco — KES 500</button>
+        <p style="text-align:center;font-size:11px;color:var(--gray-m);margin-top:12px;">🌍 No surge pricing · 3–5 min pickup · Zero emissions</p>
+      </div>
+      <!-- Bottom nav -->
+      <nav class="bottom-nav">
+        <button class="nav-tab active" id="tab-home" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span class="tab-lbl">Home</span></button>
+        <button class="nav-tab" id="tab-history" onclick="switchTab('history')"><span class="tab-icon">📋</span><span class="tab-lbl">History</span></button>
+        <button class="nav-tab" id="tab-profile" onclick="switchTab('profile')"><span class="tab-icon">👤</span><span class="tab-lbl">Profile</span></button>
+      </nav>
+    </div>
+
+    <!-- ══ SCREEN 4: VEHICLE SELECTION ══ -->
+    <div id="s-vehicle" class="screen" style="flex-direction:column;">
+      <div class="header" style="display:flex;align-items:center;gap:12px;padding-bottom:20px;">
+        <button onclick="goScreen('main')" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
+        <h2 style="color:#fff;font-weight:800;font-size:18px;flex:1;text-align:center;">Choose Your EV</h2>
+        <div style="width:40px;"></div>
+      </div>
+      <div style="display:flex;align-items:center;background:#fff;padding:12px 16px;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <div style="flex:1;display:flex;align-items:center;gap:6px;min-width:0;"><div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;"></div><span id="vTripFrom" style="font-size:12px;color:var(--gray-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span></div>
+        <span style="color:var(--gray-m);font-weight:700;">→</span>
+        <div style="flex:1;display:flex;align-items:center;gap:6px;min-width:0;"><div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;"></div><span id="vTripTo" style="font-size:12px;color:var(--gray-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span></div>
+        <div style="background:var(--green-light);border-radius:999px;padding:3px 10px;flex-shrink:0;"><span id="vTripKm" style="font-size:11px;font-weight:700;color:var(--green-mid);"></span></div>
+      </div>
+      <div class="scroll-content">
+        <p style="font-size:11px;font-weight:700;color:var(--gray-m);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;">Available EVs near you</p>
+        <div id="vVehicleCards"></div>
+        <!-- Driver card -->
+        <div style="display:flex;align-items:center;margin:16px 0;gap:8px;"><div style="flex:1;height:1px;background:var(--gray-l);"></div><span style="font-size:12px;color:var(--gray-m);font-weight:600;white-space:nowrap;">Your Driver</span><div style="flex:1;height:1px;background:var(--gray-l);"></div></div>
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:52px;height:52px;border-radius:50%;background:var(--green-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:22px;color:#fff;font-weight:800;">J</span></div>
+            <div style="flex:1;">
+              <p style="font-weight:700;font-size:15px;">James Mwangi</p>
+              <p style="font-size:13px;color:#FFD600;">★★★★★ <span style="color:var(--gray-m);">4.9 · 1,243 rides</span></p>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                <span style="background:var(--gray-l);border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--gray-d);">🚗 KDJ 421T</span>
+                <span style="background:var(--gray-l);border-radius:999px;padding:3px 8px;font-size:11px;font-weight:600;color:var(--gray-d);">⚡ Tesla Model 3</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <button onclick="alert('Calling James Mwangi...')" style="width:38px;height:38px;border-radius:50%;background:var(--green-light);border:none;cursor:pointer;font-size:16px;">📞</button>
+              <button onclick="alert('Opening chat...')" style="width:38px;height:38px;border-radius:50%;background:var(--gray-l);border:none;cursor:pointer;font-size:16px;">💬</button>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--gray-m);text-align:center;margin-top:10px;">✅ Background checked · 4.9★ · 1,243 rides</p>
+        </div>
+        <!-- Fare breakdown -->
+        <div class="card" style="margin-bottom:16px;">
+          <p style="font-weight:700;margin-bottom:12px;">Fare Breakdown</p>
+          <div id="fareBreakdown"></div>
+        </div>
+        <!-- ETA -->
+        <div class="card" style="display:flex;justify-content:space-around;margin-bottom:20px;">
+          <div style="text-align:center;"><p style="font-size:11px;color:var(--gray-m);margin-bottom:4px;">Pickup ETA</p><p style="font-weight:800;font-size:15px;" id="vEtaPickup">~4 min</p></div>
+          <div style="text-align:center;"><p style="font-size:11px;color:var(--gray-m);margin-bottom:4px;">Trip Duration</p><p style="font-weight:800;font-size:15px;" id="vEtaTrip">~30 min</p></div>
+          <div style="text-align:center;"><p style="font-size:11px;color:var(--gray-m);margin-bottom:4px;">CO₂ Saved</p><p style="font-weight:800;font-size:15px;color:var(--green);" id="vCo2">2.4 kg</p></div>
+        </div>
+        <button class="btn btn-primary" id="confirmBtn" onclick="goScreen('tracking')">⚡ Confirm Eco — KES 500</button>
+        <button class="btn btn-outline" onclick="goScreen('main')" style="margin-top:10px;">Cancel</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 5: LIVE TRACKING ══ -->
+    <div id="s-tracking" class="screen" style="flex-direction:column;background:#0D3B2E;">
+      <div style="flex:1;min-height:340px;position:relative;overflow:hidden;background:linear-gradient(135deg,#1a4a34,#0f3522,#082b1a);display:flex;align-items:center;justify-content:center;">
+        <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);opacity:0.12;" id="trackGrid"></div>
+        <div style="position:absolute;top:35%;width:100%;height:3px;background:rgba(255,255,255,0.07);"></div>
+        <div style="position:absolute;top:62%;width:100%;height:3px;background:rgba(255,255,255,0.07);"></div>
+        <div style="position:absolute;left:32%;height:100%;width:3px;background:rgba(255,255,255,0.07);"></div>
+        <div style="position:absolute;left:66%;height:100%;width:3px;background:rgba(255,255,255,0.07);"></div>
+        <div style="position:absolute;left:22%;top:38%;width:52%;height:3px;background:#00E676;opacity:.7;border-radius:2px;transform:rotate(16deg);"></div>
+        <div style="position:absolute;right:50px;top:15%;display:flex;flex-direction:column;align-items:center;z-index:3;"><span style="font-size:26px;">📍</span><div id="trackDest" style="font-size:10px;color:#fff;font-weight:600;background:rgba(0,0,0,0.5);padding:2px 6px;border-radius:4px;margin-top:2px;white-space:nowrap;max-width:80px;overflow:hidden;text-overflow:ellipsis;"></div></div>
+        <div style="position:absolute;left:36px;bottom:15%;display:flex;flex-direction:column;align-items:center;z-index:3;"><span style="font-size:11px;color:#fff;font-weight:700;">You</span><div style="width:14px;height:14px;border-radius:50%;background:#2196F3;border:2px solid #fff;margin-top:2px;"></div></div>
+        <div id="driverMarker" style="position:absolute;top:42%;display:flex;flex-direction:column;align-items:center;z-index:4;animation:moveDriver 8s linear forwards;">
+          <div id="driverPulse" style="position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(29,185,84,0.3);animation:dotPulse 1.2s ease infinite;"></div>
+          <div style="width:40px;height:40px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);z-index:1;font-size:18px;">⚡</div>
+          <div style="font-size:10px;color:#fff;font-weight:700;background:rgba(0,0,0,0.6);padding:1px 5px;border-radius:4px;margin-top:3px;">James</div>
+        </div>
+        <div style="position:absolute;top:44px;left:16px;right:16px;display:flex;align-items:center;justify-content:space-between;z-index:10;">
+          <button onclick="goScreen('main')" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.4);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">←</button>
+          <div id="phasePill" style="background:rgba(0,0,0,0.55);padding:8px 16px;border-radius:999px;color:#fff;font-size:13px;font-weight:700;">🚗 Driver on the way</div>
+          <button onclick="alert('Live ride link copied!')" style="width:40px;height:40px;border-radius:50%;background:var(--green);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">↗</button>
+        </div>
+        <div style="position:absolute;bottom:12px;left:16px;background:rgba(0,0,0,0.55);border-radius:999px;padding:4px 10px;"><span id="trackBatt" style="font-size:11px;color:#fff;font-weight:600;"></span></div>
+      </div>
+      <!-- Bottom sheet -->
+      <div style="background:#fff;border-radius:28px 28px 0 0;padding:16px;padding-bottom:24px;box-shadow:0 -8px 30px rgba(0,0,0,0.15);">
+        <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-l);margin:0 auto 16px;"></div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <div><p style="font-size:11px;color:var(--gray-m);" id="etaPhaseLabel">Arriving in</p><p id="etaDisplay" style="font-size:30px;font-weight:900;color:var(--black);">5:12</p></div>
+          <div style="flex:1;height:6px;background:var(--gray-l);border-radius:999px;overflow:hidden;"><div id="etaBar" style="height:100%;background:var(--green);border-radius:999px;width:0%;transition:width 1s linear;"></div></div>
+          <button onclick="if(confirm('🚨 Alert emergency services?'))alert('Calling 999...');" style="background:var(--red);color:#fff;border:none;border-radius:999px;padding:8px 16px;font-weight:900;font-size:13px;cursor:pointer;letter-spacing:1px;">SOS</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;background:var(--off);border-radius:16px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--gray-l);">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--green-mid);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:20px;color:#fff;font-weight:800;">J</span></div>
+          <div style="flex:1;">
+            <p style="font-weight:700;font-size:14px;">James Mwangi</p>
+            <p style="font-size:12px;color:#FFD600;">★★★★★ <span style="color:var(--gray-m);">4.9</span></p>
+            <span style="background:var(--gray-l);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--gray-d);margin-top:4px;display:inline-block;">🚗 KDJ 421T</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="alert('Calling James...')" style="width:36px;height:36px;border-radius:50%;background:var(--green-light);border:none;cursor:pointer;font-size:16px;">📞</button>
+            <button onclick="alert('Opening chat...')" style="width:36px;height:36px;border-radius:50%;background:var(--gray-l);border:none;cursor:pointer;font-size:16px;">💬</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-around;background:var(--off);border-radius:12px;padding:10px 8px;margin-bottom:12px;">
+          <div style="text-align:center;"><div style="font-size:18px;">⚡</div><div style="font-size:10px;color:var(--gray-m);margin:2px 0;">Battery</div><div id="tBatt" style="font-size:12px;font-weight:700;"></div></div>
+          <div style="text-align:center;"><div style="font-size:18px;">📡</div><div style="font-size:10px;color:var(--gray-m);margin:2px 0;">Range</div><div id="tRange" style="font-size:12px;font-weight:700;"></div></div>
+          <div style="text-align:center;"><div style="font-size:18px;">🌿</div><div style="font-size:10px;color:var(--gray-m);margin:2px 0;">Mode</div><div style="font-size:12px;font-weight:700;">Eco</div></div>
+          <div style="text-align:center;"><div style="font-size:18px;">🚗</div><div style="font-size:10px;color:var(--gray-m);margin:2px 0;">Plate</div><div style="font-size:12px;font-weight:700;">KDJ 421T</div></div>
+        </div>
+        <button class="btn btn-outline" onclick="alert('Live ride link copied!')">↗ Share Ride with Friends</button>
+      </div>
+    </div>
+
+    <!-- ══ SCREEN 6: HISTORY ══ -->
+    <div id="s-history" class="screen" style="flex-direction:column;position:relative;">
+      <div class="header" style="padding-bottom:24px;">
+        <h2 style="font-size:24px;font-weight:900;">Ride History</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:16px;">5 trips · All time</p>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:14px;padding:10px 8px;text-align:center;"><p style="font-weight:800;font-size:14px;color:#fff;">KES 5,700</p><p style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px;">Total Spent</p></div>
+          <div style="flex:1;background:rgba(255,255,255,0.15);border-radius:14px;padding:10px 8px;text-align:center;"><p style="font-weight:800;font-size:14px;color:#fff;">64.6 km</p><p style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px;">Total Distance</p></div>
+          <div style="flex:1;background:rgba(0,230,118,0.18);border-radius:14px;padding:10px 8px;text-align:center;"><p style="font-weight:800;font-size:14px;color:#00E676;">12.1 kg</p><p style="font-size:10px;color:rgba(255,255,255,0.65);margin-top:2px;">CO₂ Saved 🌿</p></div>
+        </div>
+      </div>
+      <div style="display:flex;background:#fff;padding:8px;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <button class="filter-btn active" onclick="filterHistory('all',this)" style="flex:1;padding:8px 4px;border-radius:999px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;background:var(--green);color:#fff;transition:all .2s;">All</button>
+        <button class="filter-btn" onclick="filterHistory('completed',this)" style="flex:1;padding:8px 4px;border-radius:999px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;background:var(--gray-l);color:var(--gray-d);transition:all .2s;">✓ Completed</button>
+        <button class="filter-btn" onclick="filterHistory('cancelled',this)" style="flex:1;padding:8px 4px;border-radius:999px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;background:var(--gray-l);color:var(--gray-d);transition:all .2s;">✕ Cancelled</button>
+      </div>
+      <div class="scroll-content" id="historyList"></div>
+      <nav class="bottom-nav">
+        <button class="nav-tab" id="tab-home2" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span class="tab-lbl">Home</span></button>
+        <button class="nav-tab active" id="tab-history2" onclick="switchTab('history')"><span class="tab-icon">📋</span><span class="tab-lbl">History</span></button>
+        <button class="nav-tab" id="tab-profile2" onclick="switchTab('profile')"><span class="tab-icon">👤</span><span class="tab-lbl">Profile</span></button>
+      </nav>
+    </div>
+    <!-- History detail modal -->
+    <div id="histModal" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center;">
+      <div id="histModalContent" style="background:#fff;border-radius:28px 28px 0 0;padding:20px;width:100%;max-height:85%;overflow-y:auto;animation:slideUp .3s ease;"></div>
+    </div>
+
+    <!-- ══ SCREEN 7: PROFILE ══ -->
+    <div id="s-profile" class="screen" style="flex-direction:column;position:relative;">
+      <div style="background:linear-gradient(135deg,#0D3B2E,#145A38,#1a6b44);padding:52px 20px 36px;text-align:center;position:relative;overflow:hidden;">
+        <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(29,185,84,0.12);pointer-events:none;"></div>
+        <div style="position:relative;display:inline-block;margin-bottom:16px;">
+          <div style="width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.2);border:3px solid #00E676;display:flex;align-items:center;justify-content:center;margin:0 auto;"><span style="font-size:40px;color:#fff;font-weight:800;">D</span></div>
+          <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #0D3B2E;font-size:13px;">✏️</div>
+        </div>
+        <h2 style="font-size:24px;font-weight:900;color:#fff;margin-bottom:4px;">Doreen Wanjiku</h2>
+        <p style="font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:12px;">Member since March 2024</p>
+        <div style="background:rgba(255,255,255,0.15);border-radius:999px;padding:6px 16px;display:inline-block;"><span style="font-size:13px;color:#fff;font-weight:700;">⭐ 4.9 passenger rating</span></div>
+      </div>
+      <div style="display:flex;background:#fff;margin:0 16px;margin-top:-20px;border-radius:20px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:10;position:relative;margin-bottom:20px;">
+        <div style="flex:1;text-align:center;"><p style="font-size:17px;font-weight:800;">45</p><p style="font-size:11px;color:var(--gray-m);margin-top:2px;">Total Rides</p></div>
+        <div style="width:1px;background:var(--gray-l);"></div>
+        <div style="flex:1;text-align:center;"><p style="font-size:17px;font-weight:800;color:var(--green);">187.5 kg</p><p style="font-size:11px;color:var(--gray-m);margin-top:2px;">CO₂ Saved 🌿</p></div>
+        <div style="width:1px;background:var(--gray-l);"></div>
+        <div style="flex:1;text-align:center;"><p style="font-size:17px;font-weight:800;">12 🌳</p><p style="font-size:11px;color:var(--gray-m);margin-top:2px;">Trees Equiv.</p></div>
+      </div>
+      <div class="scroll-content" style="padding-top:0;">
+        <!-- Account -->
+        <p style="font-weight:800;font-size:15px;margin-bottom:10px;">Account</p>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px;">
+          <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--gray-l);"><span style="font-size:20px;margin-right:12px;">📧</span><div style="flex:1;"><p style="font-size:11px;color:var(--gray-m);">Email</p><p style="font-size:14px;font-weight:600;">doreen@vashacab.com</p></div><span style="font-size:22px;color:var(--gray-l);">›</span></div>
+          <div style="display:flex;align-items:center;padding:14px 16px;"><span style="font-size:20px;margin-right:12px;">📱</span><div style="flex:1;"><p style="font-size:11px;color:var(--gray-m);">Phone</p><p style="font-size:14px;font-weight:600;">+254 700 123 456</p></div><span style="font-size:22px;color:var(--gray-l);">›</span></div>
+        </div>
+        <!-- Payments -->
+        <p style="font-weight:800;font-size:15px;margin-bottom:10px;">Payment Methods</p>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px;">
+          <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--gray-l);"><span style="font-size:22px;margin-right:12px;">📱</span><div style="flex:1;display:flex;align-items:center;gap:8px;"><span style="font-size:14px;font-weight:600;">M-Pesa · +254 700 123 456</span><span style="background:var(--green-light);color:var(--green-mid);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;">Default</span></div><span style="font-size:22px;color:var(--gray-l);">›</span></div>
+          <div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid var(--gray-l);"><span style="font-size:22px;margin-right:12px;">💳</span><span style="flex:1;font-size:14px;font-weight:600;">Visa · · · 4242</span><span style="font-size:22px;color:var(--gray-l);">›</span></div>
+          <button onclick="alert('Add payment method')" style="width:100%;padding:14px;background:none;border:none;color:var(--green);font-weight:700;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;">+ Add Payment Method</button>
+        </div>
+        <!-- Achievements -->
+        <p style="font-weight:800;font-size:15px;margin-bottom:4px;">🏆 Achievements</p>
+        <p style="font-size:12px;color:var(--gray-m);margin-bottom:12px;">4/6 unlocked</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          <div style="background:#fff;border-radius:20px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);"><span style="font-size:28px;display:block;margin-bottom:6px;">🌱</span><p style="font-size:12px;font-weight:700;margin-bottom:2px;">First Green Ride</p><p style="font-size:11px;color:var(--gray-m);">First EV ride</p></div>
+          <div style="background:#fff;border-radius:20px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);"><span style="font-size:28px;display:block;margin-bottom:6px;">🌿</span><p style="font-size:12px;font-weight:700;margin-bottom:2px;">Eco Warrior</p><p style="font-size:11px;color:var(--gray-m);">10 rides done</p></div>
+          <div style="background:#fff;border-radius:20px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);"><span style="font-size:28px;display:block;margin-bottom:6px;">🌳</span><p style="font-size:12px;font-weight:700;margin-bottom:2px;">Tree Planter</p><p style="font-size:11px;color:var(--gray-m);">Saved 50kg CO₂</p></div>
+          <div style="background:#fff;border-radius:20px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);"><span style="font-size:28px;display:block;margin-bottom:6px;">⚡</span><p style="font-size:12px;font-weight:700;margin-bottom:2px;">Speed Saver</p><p style="font-size:11px;color:var(--gray-m);">25 rides/month</p></div>
+          <div style="background:var(--off);border-radius:20px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);opacity:.65;position:relative;"><span style="font-size:28px;display:block;margin-bottom:6px;opacity:.3;">🏆</span><p style="font-size:12px;font-weight:700;color:var(--gray-m);margin-bottom:2px;">Champion Rider</p><p style="font-size:11px;color:var(--gray-m);">100 total rides</p><span style="position:absolute;top:8px;right:8px;font-size:14px;">🔒</span></div>
+          <div style="background:var(--off);border-radius:20px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);opacity:.65;position:relative;"><span style="font-size:28px;display:block;margin-bottom:6px;opacity:.3;">🌍</span><p style="font-size:12px;font-weight:700;color:var(--gray-m);margin-bottom:2px;">Climate Hero</p><p style="font-size:11px;color:var(--gray-m);">Save 500kg CO₂</p><span style="position:absolute;top:8px;right:8px;font-size:14px;">🔒</span></div>
+        </div>
+        <!-- Impact -->
+        <p style="font-weight:800;font-size:15px;margin-bottom:10px;">🌍 Environmental Impact</p>
+        <div style="background:linear-gradient(135deg,#0D3B2E,#145A38);border-radius:20px;padding:20px;margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-around;margin-bottom:14px;">
+            <div style="text-align:center;"><p style="font-size:22px;font-weight:900;color:#00E676;">187.5 kg</p><p style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px;">CO₂ Saved</p></div>
+            <div style="text-align:center;"><p style="font-size:22px;font-weight:900;color:#00E676;">= 12 🌳</p><p style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px;">Trees Planted</p></div>
+          </div>
+          <p style="font-size:13px;color:rgba(255,255,255,0.8);text-align:center;line-height:1.6;">You've avoided 187.5 kg of CO₂ by choosing electric rides — equal to planting 12 trees! 🌍</p>
+        </div>
+        <!-- Settings -->
+        <p style="font-weight:800;font-size:15px;margin-bottom:10px;">Settings & Support</p>
+        <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:20px;" id="settingsMenu"></div>
+        <div style="text-align:center;padding:16px 0;"><p style="font-size:11px;color:var(--gray-m);">Vasha Cab v1.0.0 · Made with 💚 for a cleaner planet</p><p style="font-size:11px;color:var(--gray-m);margin-top:4px;">hello@vashacab.com · +254 712 345 678</p></div>
+      </div>
+      <nav class="bottom-nav">
+        <button class="nav-tab" id="tab-home3" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span class="tab-lbl">Home</span></button>
+        <button class="nav-tab" id="tab-history3" onclick="switchTab('history')"><span class="tab-icon">📋</span><span class="tab-lbl">History</span></button>
+        <button class="nav-tab active" id="tab-profile3" onclick="switchTab('profile')"><span class="tab-icon">👤</span><span class="tab-lbl">Profile</span></button>
+      </nav>
+    </div>
+
+  </div><!-- end phone -->
+</div><!-- end shell-wrap -->
+
+<script>
+// ── DATA ──────────────────────────────────────
+const LOCATIONS = [
+  {name:'Westlands',lat:-1.2676,lng:36.8028,area:'Nairobi West'},
+  {name:'CBD Nairobi',lat:-1.2833,lng:36.8167,area:'City Centre'},
+  {name:'Karen',lat:-1.3167,lng:36.7167,area:'Nairobi South'},
+  {name:'Kilimani',lat:-1.2894,lng:36.7817,area:'Nairobi West'},
+  {name:'Upperhill',lat:-1.2964,lng:36.8167,area:'Nairobi Central'},
+  {name:'Lavington',lat:-1.2833,lng:36.7667,area:'Nairobi West'},
+  {name:'Gigiri',lat:-1.2333,lng:36.8000,area:'Nairobi North'},
+  {name:'Parklands',lat:-1.2614,lng:36.8133,area:'Nairobi North'},
+  {name:'JKIA Airport',lat:-1.3192,lng:36.9275,area:'Embakasi'},
+  {name:'Two Rivers Mall',lat:-1.2167,lng:36.7833,area:'Runda'},
+  {name:'Nairobi Hospital',lat:-1.2953,lng:36.8183,area:'Upper Hill'},
+  {name:'Sarit Centre',lat:-1.2628,lng:36.8028,area:'Westlands'},
+  {name:'Junction Mall',lat:-1.3000,lng:36.7667,area:'Dagoretti'},
+  {name:'Thika Road Mall',lat:-1.2192,lng:36.8867,area:'Roysambu'},
+  {name:'Hurlingham',lat:-1.2958,lng:36.7917,area:'Nairobi South'},
+  {name:'South B',lat:-1.3100,lng:36.8333,area:'Nairobi South'},
+  {name:'Eastleigh',lat:-1.2750,lng:36.8500,area:'Nairobi East'},
+  {name:'Ruiru',lat:-1.1458,lng:36.9606,area:'Kiambu County'},
+  {name:'Rongai',lat:-1.3986,lng:36.7444,area:'Kajiado County'},
+  {name:"Lang'ata",lat:-1.3500,lng:36.7333,area:'Nairobi South'},
+  {name:'Kasarani',lat:-1.2167,lng:36.8833,area:'Nairobi North'},
+  {name:'Embakasi',lat:-1.3208,lng:36.8975,area:'Nairobi East'},
+  {name:'Muthaiga',lat:-1.2500,lng:36.8333,area:'Nairobi North'},
+  {name:'Spring Valley',lat:-1.2500,lng:36.7833,area:'Nairobi West'},
+];
+const VEHICLES = [
+  {id:'eco',type:'Eco',name:'Eco Ride',emoji:'🟢',battery:87,range:320,pricePerKm:28,baseFare:150,desc:'Budget-friendly, excellent range. Perfect for daily commutes.'},
+  {id:'premium',type:'Premium',name:'Premium EV',emoji:'⚡',battery:95,range:480,pricePerKm:45,baseFare:250,desc:'Premium comfort, longest range. Business class experience.'},
+  {id:'comfort',type:'Comfort XL',name:'Comfort XL',emoji:'🔋',battery:72,range:290,pricePerKm:55,baseFare:300,desc:'Extra space for groups. Full battery, ultra-smooth ride.'},
+];
+const HISTORY = [
+  {id:1,date:'Dec 12, 2024',from:'Westlands',to:'JKIA Airport',price:1850,km:22.4,min:38,co2:4.2,driver:'James Mwangi',rating:5.0,type:'Premium',status:'completed'},
+  {id:2,date:'Dec 10, 2024',from:'Kilimani',to:'CBD Nairobi',price:620,km:6.1,min:18,co2:1.1,driver:'Faith Njeri',rating:4.8,type:'Eco',status:'completed'},
+  {id:3,date:'Dec 8, 2024',from:'Karen',to:'Upperhill',price:1100,km:14.3,min:27,co2:2.7,driver:'Brian Otieno',rating:4.7,type:'Comfort XL',status:'completed'},
+  {id:4,date:'Dec 5, 2024',from:'Lavington',to:'Two Rivers Mall',price:880,km:9.8,min:22,co2:1.8,driver:'Alice Wanjiku',rating:4.9,type:'Eco',status:'completed'},
+  {id:5,date:'Dec 3, 2024',from:'Parklands',to:'Gigiri',price:1250,km:12.0,min:24,co2:2.3,driver:'John Kamau',rating:4.6,type:'Premium',status:'cancelled'},
+];
+
+// ── STATE ─────────────────────────────────────
+let currentScreen = 'splash';
+let selectedVehicle = VEHICLES[0];
+let pickup = null, destination = null;
+let showAllVehicles = false;
+let etaInterval = null, etaSeconds = 312;
+
+// ── SCREEN NAVIGATION ─────────────────────────
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const map = {splash:'s-splash',auth:'s-auth',main:'s-main',vehicle:'s-vehicle',tracking:'s-tracking',history:'s-history',profile:'s-profile'};
+  const el = document.getElementById(map[id] || id);
+  if (el) el.classList.add('active');
+  currentScreen = id;
+  if (id === 'main') renderVehicleCards();
+  if (id === 'vehicle') renderVehicleScreen();
+  if (id === 'tracking') startTracking();
+  if (id === 'history') renderHistory('all');
+  if (id === 'profile') renderSettings();
+}
+
+// ── TAB SWITCHING ─────────────────────────────
+function switchTab(tab) {
+  ['home','history','profile'].forEach(t => {
+    [1,2,3].forEach(n => { const el = document.getElementById(`tab-${t}${n>1?n:''}`); if(el){ el.classList.remove('active'); }});
+  });
+  [1,2,3].forEach(n => { const el = document.getElementById(`tab-${tab}${n>1?n:''}`); if(el) el.classList.add('active'); });
+  if (tab==='home') goScreen('main');
+  if (tab==='history') { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('s-history').classList.add('active'); renderHistory('all'); }
+  if (tab==='profile') { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById('s-profile').classList.add('active'); renderSettings(); }
+}
+
+// ── AUTH TABS ─────────────────────────────────
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-panel').forEach(p => p.style.display='none');
+  document.querySelectorAll('.auth-tab').forEach(b => { b.style.color='var(--gray-m)'; b.style.borderBottomColor='transparent'; b.style.background='transparent'; });
+  const panel = document.getElementById('auth-'+tab);
+  if (panel) { panel.style.display='flex'; panel.style.flexDirection='column'; }
+  const btn = document.querySelector(`[data-tab="${tab}"]`);
+  if (btn) { btn.style.color='var(--green)'; btn.style.borderBottomColor='var(--green)'; btn.style.background='#fff'; }
+}
+
+// ── LOCATION DROPDOWNS ────────────────────────
+function showDropdown(type) {
+  filterDropdown(type);
+}
+function filterDropdown(type) {
+  const input = document.getElementById(type==='pickup'?'pickupInput':'destInput');
+  const dd = document.getElementById(type==='pickup'?'pickup-dropdown':'dest-dropdown');
+  const q = input.value.toLowerCase();
+  const filtered = LOCATIONS.filter(l => l.name.toLowerCase().includes(q)||l.area.toLowerCase().includes(q));
+  dd.style.display = 'block';
+  dd.innerHTML = filtered.length===0 ? '<p style="padding:14px;color:var(--gray-m);font-size:13px;text-align:center;">No locations found</p>'
+    : filtered.map(l => `<div onclick="selectLocation('${type}','${l.name}')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--off);" onmouseover="this.style.background='var(--off)'" onmouseout="this.style.background=''">`+
+        `<span style="font-size:16px;">📍</span><div><p style="font-weight:600;font-size:14px;">${l.name}</p><p style="font-size:11px;color:var(--gray-m);">${l.area}</p></div></div>`).join('');
+}
+function selectLocation(type, name) {
+  const loc = LOCATIONS.find(l=>l.name===name);
+  if (!loc) return;
+  if (type==='pickup') { pickup=loc; document.getElementById('pickupInput').value=name; document.getElementById('pickup-dropdown').style.display='none'; }
+  else { destination=loc; document.getElementById('destInput').value=name; document.getElementById('dest-dropdown').style.display='none'; }
+  if (pickup && destination) updateEstimates();
+  updateMapPins();
+}
+function swapLocations() {
+  const tmp=pickup; pickup=destination; destination=tmp;
+  document.getElementById('pickupInput').value = pickup?pickup.name:'';
+  document.getElementById('destInput').value = destination?destination.name:'';
+  if (pickup&&destination) updateEstimates();
+  updateMapPins();
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#pickupInput')&&!e.target.closest('#pickup-dropdown')) { const d=document.getElementById('pickup-dropdown'); if(d) d.style.display='none'; }
+  if (!e.target.closest('#destInput')&&!e.target.closest('#dest-dropdown')) { const d=document.getElementById('dest-dropdown'); if(d) d.style.display='none'; }
+});
+</script>
+
+<script>
+// ── DISTANCE & FARE ───────────────────────────
+function calcDist(a,b) {
+  const R=6371, dLat=(b.lat-a.lat)*Math.PI/180, dLng=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return parseFloat((R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))*1.3).toFixed(1));
+}
+function calcFare(v,km){ return Math.round(v.baseFare+v.pricePerKm*km); }
+function battColor(p){ return p>=60?'#1DB954':p>=30?'#FFD600':'#FF3B30'; }
+
+function updateEstimates() {
+  if (!pickup||!destination) return;
+  const km=calcDist(pickup,destination);
+  const dur=Math.ceil((km/25)*60);
+  const fare=calcFare(selectedVehicle,km);
+  const co2=(km*0.192).toFixed(1);
+  document.getElementById('estDist').textContent=km+' km';
+  document.getElementById('estDur').textContent=dur+' min drive';
+  document.getElementById('estFare').textContent='KES '+fare.toLocaleString();
+  document.getElementById('estVeh').textContent=selectedVehicle.type;
+  document.getElementById('estCo2').textContent=co2+' kg';
+  document.getElementById('estimatesCard').style.display='flex';
+  document.getElementById('bookBtn').textContent='⚡ Book '+selectedVehicle.type+' — KES '+fare.toLocaleString();
+}
+
+// ── MAP PINS ──────────────────────────────────
+function updateMapPins() {
+  const LAT_MIN=-1.41,LAT_MAX=-1.14,LNG_MIN=36.71,LNG_MAX=36.97;
+  const toX=lng=>((lng-LNG_MIN)/(LNG_MAX-LNG_MIN))*76+12;
+  const toY=lat=>((lat-LAT_MIN)/(LAT_MAX-LAT_MIN))*76+12;
+  const pinA=document.getElementById('pinA'), pinB=document.getElementById('pinB');
+  const svg=document.getElementById('routeSvg'), center=document.getElementById('mapCenter');
+  if (pickup) {
+    pinA.style.display='flex'; pinA.style.left=toX(pickup.lng)+'%'; pinA.style.top=toY(pickup.lat)+'%';
+  } else { pinA.style.display='none'; }
+  if (destination) {
+    pinB.style.display='flex'; pinB.style.left=toX(destination.lng)+'%'; pinB.style.top=toY(destination.lat)+'%';
+  } else { pinB.style.display='none'; }
+  if (pickup&&destination) {
+    svg.style.display='block'; center.style.display='none';
+    svg.innerHTML=`<line x1="${toX(pickup.lng)}%" y1="${toY(pickup.lat)}%" x2="${toX(destination.lng)}%" y2="${toY(destination.lat)}%" stroke="#00E676" stroke-width="2.5" stroke-dasharray="6 4" opacity="0.85"/>`;
+  } else {
+    svg.style.display='none';
+    if (!pickup&&!destination) center.style.display='block';
+  }
+}
+
+// ── VEHICLE CARDS ─────────────────────────────
+function renderVehicleCards() {
+  const km = (pickup&&destination) ? calcDist(pickup,destination) : null;
+  const container=document.getElementById('vehicleCards');
+  const list = showAllVehicles ? VEHICLES : [selectedVehicle];
+  container.innerHTML = list.map(v => {
+    const fare=km?calcFare(v,km):null;
+    const sel=selectedVehicle.id===v.id;
+    return `<div onclick="selectVehicle('${v.id}')" style="background:${sel?'#F0FBF5':'#fff'};border:2px solid ${sel?'#1DB954':'transparent'};border-radius:20px;padding:16px;margin-bottom:10px;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,0.08);transition:all .2s;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:28px;">${v.emoji}</span><div><p style="font-weight:700;font-size:16px;">${v.type}</p><p style="font-size:12px;color:var(--gray-m);">${v.name}</p></div></div>
+        <div style="background:${sel?'var(--green)':'var(--gray-l)'};border-radius:999px;padding:4px 10px;"><span style="font-size:12px;font-weight:700;color:${sel?'#fff':'var(--gray-d)'};">KES ${v.baseFare}+</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-around;background:var(--off);border-radius:12px;padding:10px 8px;margin-bottom:10px;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><span style="font-size:10px;color:var(--gray-m);text-transform:uppercase;letter-spacing:.5px;">Battery</span><div style="width:52px;height:8px;background:var(--gray-l);border-radius:999px;overflow:hidden;"><div style="height:100%;width:${v.battery}%;background:${battColor(v.battery)};border-radius:999px;"></div></div><span style="font-size:12px;font-weight:700;color:${battColor(v.battery)};">${v.battery}%</span></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><span style="font-size:10px;color:var(--gray-m);text-transform:uppercase;letter-spacing:.5px;">Range</span><b style="font-size:13px;">${v.range} km</b></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><span style="font-size:10px;color:var(--gray-m);text-transform:uppercase;letter-spacing:.5px;">Per km</span><b style="font-size:13px;">KES ${v.pricePerKm}</b></div>
+      </div>
+      <p style="font-size:12px;color:var(--gray-d);line-height:1.5;margin-bottom:8px;">${v.desc}</p>
+      ${fare?`<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--gray-l);"><span style="font-size:12px;color:var(--gray-m);">Est. fare · ${km} km</span><span style="font-size:14px;font-weight:800;color:var(--green);">KES ${fare.toLocaleString()}</span></div>`:''}
+      ${sel?'<div style="text-align:right;margin-top:8px;"><span style="background:var(--green);color:#fff;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;">✓ Selected</span></div>':''}
+    </div>`;
+  }).join('');
+  const btn=document.getElementById('toggleVehBtn');
+  if(btn) btn.textContent=showAllVehicles?'▲ Less':'▼ All';
+}
+function selectVehicle(id) {
+  selectedVehicle=VEHICLES.find(v=>v.id===id)||VEHICLES[0];
+  showAllVehicles=false;
+  renderVehicleCards();
+  updateEstimates();
+}
+function toggleVehicles() { showAllVehicles=!showAllVehicles; renderVehicleCards(); }
+
+// ── BOOK BUTTON ───────────────────────────────
+function handleBook() {
+  const err=document.getElementById('locError');
+  if(!pickup||!destination){ err.style.display='block'; return; }
+  if(pickup.name===destination.name){ err.style.display='block'; err.textContent='⚠️ Pickup and destination cannot be the same.'; return; }
+  err.style.display='none';
+  goScreen('vehicle');
+}
+
+// ── VEHICLE SELECTION SCREEN ─────────────────
+function renderVehicleScreen() {
+  const km=(pickup&&destination)?calcDist(pickup,destination):12.5;
+  const dur=Math.ceil((km/25)*60);
+  document.getElementById('vTripFrom').textContent=pickup?pickup.name:'Pickup';
+  document.getElementById('vTripTo').textContent=destination?destination.name:'Destination';
+  document.getElementById('vTripKm').textContent=km+' km';
+  document.getElementById('vEtaPickup').textContent='~'+(Math.floor(Math.random()*3)+3)+' min';
+  document.getElementById('vEtaTrip').textContent='~'+dur+' min';
+  document.getElementById('vCo2').textContent=(km*0.192).toFixed(1)+' kg';
+  const fare=calcFare(selectedVehicle,km);
+  document.getElementById('confirmBtn').textContent='⚡ Confirm '+selectedVehicle.type+' — KES '+fare.toLocaleString();
+  // Fare breakdown
+  document.getElementById('fareBreakdown').innerHTML=[
+    {k:'Base fare',v:'KES '+selectedVehicle.baseFare},
+    {k:'Distance ('+km+' km × KES '+selectedVehicle.pricePerKm+')',v:'KES '+Math.round(selectedVehicle.pricePerKm*km)},
+    {k:'Environmental fee',v:'FREE 🌿',green:true},
+  ].map(r=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--gray-l);"><span style="font-size:13px;color:var(--gray-d);">${r.k}</span><span style="font-size:13px;font-weight:600;color:${r.green?'var(--green)':'var(--black)'};">${r.v}</span></div>`).join('')
+    +`<div style="display:flex;justify-content:space-between;padding-top:10px;"><span style="font-weight:700;">Total</span><span style="font-weight:800;color:var(--green);font-size:16px;">KES ${fare.toLocaleString()}</span></div>`;
+  // Vehicle cards on vehicle screen
+  const vContainer=document.getElementById('vVehicleCards');
+  if(vContainer) {
+    vContainer.innerHTML=VEHICLES.map(v=>{
+      const vf=calcFare(v,km); const sel=selectedVehicle.id===v.id;
+      return `<div onclick="selectedVehicle=VEHICLES.find(x=>x.id==='${v.id}');renderVehicleScreen();" style="background:${sel?'#F0FBF5':'#fff'};border:2px solid ${sel?'#1DB954':'transparent'};border-radius:20px;padding:14px;margin-bottom:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:26px;">${v.emoji}</span><div><p style="font-weight:700;font-size:15px;">${v.type}</p><p style="font-size:12px;color:var(--gray-m);">${v.name}</p></div></div><span style="background:${sel?'var(--green)':'var(--gray-l)'};color:${sel?'#fff':'var(--gray-d)'};border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;">KES ${v.baseFare}+</span></div>
+        <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--gray-l);"><span style="font-size:12px;color:var(--gray-m);">Estimated fare</span><span style="font-size:14px;font-weight:800;color:var(--green);">KES ${vf.toLocaleString()}</span></div>
+      </div>`;
+    }).join('');
+  }
+}
+</script>
+
+<script>
+// ── TRACKING ──────────────────────────────────
+function startTracking() {
+  if(etaInterval) clearInterval(etaInterval);
+  etaSeconds=312;
+  document.getElementById('trackDest').textContent=destination?destination.name:'Destination';
+  document.getElementById('tBatt').textContent=selectedVehicle.battery+'%';
+  document.getElementById('tRange').textContent=selectedVehicle.range+' km';
+  document.getElementById('trackBatt').textContent='⚡ '+selectedVehicle.battery+'% · '+selectedVehicle.range+' km range';
+  // Build track grid
+  const g=document.getElementById('trackGrid');
+  if(g){ g.innerHTML=Array(42).fill('<div style="border:.5px solid #1DB954;"></div>').join(''); }
+  // ETA countdown
+  etaInterval=setInterval(()=>{
+    etaSeconds=Math.max(0,etaSeconds-1);
+    const m=Math.floor(etaSeconds/60), s=(etaSeconds%60).toString().padStart(2,'0');
+    const el=document.getElementById('etaDisplay');
+    if(el) el.textContent=etaSeconds>0?m+':'+s:'🎉';
+    const pct=((312-etaSeconds)/312)*100;
+    const bar=document.getElementById('etaBar');
+    if(bar) bar.style.width=pct+'%';
+    const pill=document.getElementById('phasePill');
+    if(etaSeconds<240&&etaSeconds>60){ if(pill) pill.textContent='🛣️ En route'; const lb=document.getElementById('etaPhaseLabel'); if(lb) lb.textContent='ETA'; }
+    if(etaSeconds===0){
+      clearInterval(etaInterval);
+      if(pill) pill.textContent='✅ Arrived!';
+      setTimeout(()=>{ if(confirm('🎉 You\'ve arrived!\n\nRate your driver?')) goScreen('main'); else goScreen('main'); },600);
+    }
+  },1000);
+}
+
+// ── HISTORY ───────────────────────────────────
+const VEMOJI={Eco:'🟢',Premium:'⚡','Comfort XL':'🔋'};
+function renderHistory(filter) {
+  const list=document.getElementById('historyList');
+  const data=filter==='all'?HISTORY:HISTORY.filter(r=>r.status===filter);
+  if(!list) return;
+  if(data.length===0){ list.innerHTML='<div style="text-align:center;padding-top:80px;"><span style="font-size:48px;">🚗</span><p style="color:var(--gray-m);margin-top:12px;">No rides found</p></div>'; return; }
+  list.innerHTML=data.map(r=>`
+    <div onclick="showHistDetail(${r.id})" style="background:#fff;border-radius:20px;padding:16px;margin-bottom:12px;box-shadow:0 3px 12px rgba(0,0,0,0.08);cursor:pointer;opacity:${r.status==='cancelled'?0.7:1};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:13px;font-weight:600;color:var(--gray-m);">${r.date}</span>
+        <span style="border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;background:${r.status==='completed'?'var(--green-light)':'#FFE0E0'};color:${r.status==='completed'?'var(--green-mid)':'#c0392b'};">${r.status==='completed'?'✓ Completed':'✕ Cancelled'}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <div style="flex:1;display:flex;align-items:center;gap:6px;min-width:0;"><div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;"></div><span style="font-size:13px;color:var(--gray-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.from}</span></div>
+        <span style="color:var(--gray-m);font-size:12px;">→</span>
+        <div style="flex:1;display:flex;align-items:center;gap:6px;min-width:0;"><div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;"></div><span style="font-size:13px;color:var(--gray-d);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.to}</span></div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+        <span style="background:var(--off);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--gray-d);">💰 KES ${r.price.toLocaleString()}</span>
+        <span style="background:var(--off);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--gray-d);">📍 ${r.km} km</span>
+        <span style="background:var(--off);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--gray-d);">⏱ ${r.min} min</span>
+        <span style="background:var(--off);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;color:var(--green);">🌿 ${r.co2} kg</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--gray-l);padding-top:8px;">
+        <span style="font-size:11px;color:var(--gray-m);">${VEMOJI[r.type]||'🚗'} ${r.type}</span>
+        <span style="font-size:11px;color:var(--gray-m);">👤 ${r.driver} · ${'★'.repeat(Math.round(r.rating))}</span>
+      </div>
+    </div>`).join('');
+}
+function filterHistory(f,btn) {
+  document.querySelectorAll('.filter-btn').forEach(b=>{ b.style.background='var(--gray-l)'; b.style.color='var(--gray-d)'; });
+  btn.style.background='var(--green)'; btn.style.color='#fff';
+  renderHistory(f);
+}
+function showHistDetail(id) {
+  const r=HISTORY.find(x=>x.id===id); if(!r) return;
+  const modal=document.getElementById('histModal');
+  const content=document.getElementById('histModalContent');
+  modal.style.display='flex';
+  content.innerHTML=`
+    <div style="width:40px;height:4px;border-radius:2px;background:var(--gray-l);margin:0 auto 16px;"></div>
+    <h3 style="font-size:20px;font-weight:800;margin-bottom:16px;">Trip Details</h3>
+    <div style="background:var(--off);border-radius:14px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0;"><div style="width:10px;height:10px;border-radius:50%;background:var(--green);flex-shrink:0;"></div><span style="font-size:14px;color:var(--gray-d);">${r.from}</span></div>
+      <div style="width:2px;height:16px;background:var(--gray-l);margin-left:4px;"></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0;"><div style="width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;"></div><span style="font-size:14px;color:var(--gray-d);">${r.to}</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      ${[['Date',r.date],['Vehicle',VEMOJI[r.type]+' '+r.type],['Driver',r.driver],['Rating','★'.repeat(Math.round(r.rating))+' '+r.rating],['Distance',r.km+' km'],['Duration',r.min+' min'],['CO₂ Saved',r.co2+' kg 🌿',true],['Status',r.status==='completed'?'✓ Completed':'✕ Cancelled']].map(c=>`<div style="background:var(--off);border-radius:10px;padding:8px 12px;"><p style="font-size:11px;color:var(--gray-m);margin-bottom:2px;">${c[0]}</p><p style="font-size:13px;font-weight:700;color:${c[2]?'var(--green)':'var(--black)'};">${c[1]}</p></div>`).join('')}
+    </div>
+    <div style="background:var(--off);border-radius:14px;padding:14px;margin-bottom:14px;">
+      <p style="font-weight:700;margin-bottom:10px;">Fare Breakdown</p>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-l);"><span style="font-size:13px;color:var(--gray-d);">Base fare</span><span style="font-size:13px;font-weight:600;">KES 150</span></div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--gray-l);"><span style="font-size:13px;color:var(--gray-d);">Distance</span><span style="font-size:13px;font-weight:600;">KES ${r.price-150}</span></div>
+      <div style="display:flex;justify-content:space-between;padding-top:10px;"><span style="font-weight:700;">Total</span><span style="font-weight:800;color:var(--green);font-size:16px;">KES ${r.price.toLocaleString()}</span></div>
+    </div>
+    <button onclick="document.getElementById('histModal').style.display='none'" style="width:100%;padding:14px;background:var(--green-light);border:none;border-radius:16px;color:var(--green-mid);font-weight:700;font-size:15px;cursor:pointer;font-family:'Inter',sans-serif;">Close</button>`;
+}
+document.getElementById('histModal').addEventListener('click',function(e){ if(e.target===this) this.style.display='none'; });
+
+// ── SETTINGS MENU ─────────────────────────────
+function renderSettings() {
+  const menu=[
+    {icon:'📍',label:'Saved Addresses',action:"alert('Home · Work · Gym')"},
+    {icon:'🔔',label:'Notifications',toggle:true,id:'tog-notif'},
+    {icon:'🌙',label:'Dark Mode',toggle:true,id:'tog-dark'},
+    {icon:'📡',label:'Location Sharing',toggle:true,id:'tog-loc'},
+    {icon:'🔒',label:'Privacy & Security',action:"alert('Your data is protected')"},
+    {icon:'💬',label:'24/7 Support',action:"alert('hello@vashacab.com')"},
+    {icon:'⭐',label:'Rate the App',action:"alert('Thank you!')"},
+    {icon:'📄',label:'Terms & Privacy',action:"alert('vashacab.com/terms')"},
+    {icon:'🚪',label:'Sign Out',action:"goScreen('auth')",danger:true},
+  ];
+  const el=document.getElementById('settingsMenu');
+  if(!el) return;
+  el.innerHTML=menu.map((m,i)=>`
+    <div onclick="${m.toggle?'':`${m.action}`}" style="display:flex;align-items:center;padding:14px 16px;border-bottom:${i<menu.length-1?'1px solid var(--gray-l)':'none'};cursor:pointer;">
+      <span style="font-size:20px;margin-right:12px;width:28px;text-align:center;">${m.icon}</span>
+      <span style="flex:1;font-size:14px;font-weight:600;color:${m.danger?'var(--red)':'var(--black)'};">${m.label}</span>
+      ${m.toggle?`<div id="${m.id}" onclick="toggleSetting(this)" style="width:44px;height:24px;border-radius:999px;background:${m.id==='tog-notif'||m.id==='tog-loc'?'var(--green)':'var(--gray-l)'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;"><div style="position:absolute;top:2px;left:${m.id==='tog-notif'||m.id==='tog-loc'?'20px':'2px'};width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:left .2s;"></div></div>`:'<span style="font-size:22px;color:var(--gray-l);">›</span>'}
+    </div>`).join('');
+}
+function toggleSetting(el) {
+  const on=el.style.background==='var(--green)'||el.style.background==='rgb(29, 185, 84)';
+  el.style.background=on?'var(--gray-l)':'var(--green)';
+  el.querySelector('div').style.left=on?'2px':'20px';
+}
+
+// ── SPLASH ANIMATION ──────────────────────────
+window.addEventListener('load',()=>{
+  setTimeout(()=>{ const l=document.getElementById('splashLogo'); if(l){l.style.animation='scaleIn .5s cubic-bezier(.17,.67,.32,1.3) forwards';l.style.opacity=1;} },200);
+  setTimeout(()=>{ const t=document.getElementById('splashTitle'); if(t){t.style.animation='fadeUp .5s ease forwards';t.style.opacity=1;} },700);
+  setTimeout(()=>{ const g=document.getElementById('splashTag'); if(g){g.style.animation='fadeUp .4s ease forwards';g.style.opacity=1;} },1100);
+  setTimeout(()=>goScreen('auth'),3200);
+  // Build map grid
+  const g=document.getElementById('mapGrid'); if(g){ g.innerHTML=Array(25).fill('<div style="border:.5px solid #1DB954;"></div>').join(''); }
+});
+</script>
+</body>
+</html>
